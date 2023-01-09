@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+
+	<settings>
+		<setting name="mapUnderscoreToCamelCase" value="true"/>
+	</settings>
+	
+	<typeAliases>
+		<typeAlias type="com.gdu.semi.domain.UserDTO" alias="UserDTO" />
+		<typeAlias type="com.gdu.semi.domain.SleepUserDTO" alias="SleepUserDTO" />
+		<typeAlias type="com.gdu.semi.domain.RetireUserDTO" alias="RetireUserDTO" />
+		<typeAlias type="com.gdu.semi.domain.BbsDTO" alias="BbsDTO" />
+		<typeAlias type="com.gdu.semi.domain.GalleryDTO" alias="GalleryDTO" />
+		<typeAlias type="com.gdu.semi.domain.CommentDTO" alias="CommentDTO" />
+		<typeAlias type="com.gdu.semi.domain.SummernoteImageDTO" alias="SummernoteImageDTO" />	<!-- 새로 추가하엿습니다. YJ -->
+		<typeAlias type="com.gdu.semi.domain.LikeDTO" alias="LikeDTO" />
+		<typeAlias type="com.gdu.semi.domain.UploadDTO" alias="UploadDTO" />
+		<typeAlias type="com.gdu.semi.domain.AttachDTO" alias="AttachDTO" />
+	</typeAliases>
+	
+
+</configuration>
+

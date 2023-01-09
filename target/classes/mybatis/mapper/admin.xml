@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.gdu.semi.mapper.AdminMapper">
+
+	<!-- 전체 회원수 -->
+	<select id="selectUserListCount" resultType="int">
+		SELECT COUNT(*)
+		  FROM USERS
+	</select>
+	<!--
+	SELECT USER_NO, ID, PW, NAME, GENDER, EMAIL, MOBILE, BIRTHYEAR, BIRTHDAY, POSTCODE, ROAD_ADDRESS, JIBUN_ADDRESS, DETAIL_ADDRESS, EXTRA_ADDRESS, AGREE_CODE, SNS_TYPE, JOIN_DATE, PW_MODIFY_DATE, INFO_MODIFY_DATE, SESSION_ID, SESSION_LIMIT_DATE, POINT
+		  FROM USERS  -->
+	<!-- 회원관리 리스트 -->
+	<select id="selectUserList" parameterType="Map" resultType="UserDTO">
+		SELECT A.ROW_NUM, A.USER_NO, A.ID, A.NAME, A.JOIN_DATE, A.MOBILE, A.PW_MODIFY_DATE, A.INFO_MODIFY_DATE, A.POINT
+		  FROM (SELECT ROW_NUMBER() OVER(ORDER BY USER_NO DESC) AS ROW_NUM, USER_NO, ID, PW, NAME, JOIN_DATE, MOBILE, PW_MODIFY_DATE, INFO_MODIFY_DATE, POINT
+			  	  FROM USERS) A
+		 WHERE A.ROW_NUM BETWEEN #{begin} AND #{end}
+	</select>
+	
+	<!-- 검색된 회원수 -->
+	<select id="selectUsersByQueryCount" parameterType="Map" resultType="int">
+		SELECT COUNT(${column}) AS COUNT 
+		  FROM ( SELECT ${column}
+		           FROM USERS
+		           WHERE ${column} LIKE '%' || #{searchText} || '%') A
+	</select>
+	<!-- 회원 검색 -->
+	<select id="selectUsersByQuery" parameterType="Map" resultType="UserDTO">
+		SELECT A.ROW_NUM, A.USER_NO, A.ID, A.NAME, A.JOIN_DATE, A.MOBILE, A.PW_MODIFY_DATE, A.INFO_MODIFY_DATE, A.POINT
+		  FROM (SELECT ROW_NUMBER() OVER(ORDER BY USER_NO DESC) AS ROW_NUM, USER_NO, ID, PW, NAME, JOIN_DATE, MOBILE, PW_MODIFY_DATE, INFO_MODIFY_DATE, POINT
+			  	  FROM USERS
+			  	 WHERE ${column} LIKE '%' || #{searchText} || '%') A
+		 WHERE A.ROW_NUM BETWEEN #{begin} AND #{end}
+	</select>
+	
+	
+	<!-- 회원 강제 탈퇴2: RETIRE_USERS 테이블에 추가 -->
+	
+	<insert id="insertRetireUser" parameterType="Map">
+		INSERT INTO RETIRE_USERS (RETIRE_NO, RETIRE_DATE, JOIN_DATE, ID)
+		SELECT RETIRE_USERS_SEQ.NEXTVAL, A.* FROM(
+			<foreach collection="retireUsers" item="item" separator="UNION ALL ">
+			SELECT SYSDATE, 
+				   #{item.joinDate} AS JOIN_DATE,
+				   #{item.id} AS ID
+		      FROM DUAL
+		  </foreach>) A
+	</insert>
+	
+	<insert id="insertSleepUser" parameterType="Map">
+		INSERT INTO SLEEP_USERS (SLEEP_NO, ID, PW, NAME, GENDER, EMAIL, MOBILE, BIRTHYEAR, BIRTHDAY, POSTCODE, ROAD_ADDRESS, JIBUN_ADDRESS, DETAIL_ADDRESS, EXTRA_ADDRESS, AGREE_CODE, SNS_TYPE, JOIN_DATE, PW_MODIFY_DATE, SLEEP_DATE, POINT)
+		SELECT SLEEP_USERS_SEQ.NEXTVAL, A.* FROM(
+			<foreach collection="sleepUsers" item="item" separator="UNION ALL ">
+				SELECT #{item.id,jdbcType=VARCHAR} AS ID,
+					   #{item.pw,jdbcType=VARCHAR} AS PW,
+					   #{item.name,jdbcType=VARCHAR} AS NAME,
+					   #{item.gender,jdbcType=VARCHAR} AS GENDER,
+					   #{item.email,jdbcType=VARCHAR} AS EMAIL,
+					   #{item.mobile,jdbcType=VARCHAR} AS MOBILE,
+					   #{item.birthyear,jdbcType=VARCHAR} AS BIRTHYEAR,
+					   #{item.birthday,jdbcType=VARCHAR} AS BIRTHDAY,
+					   #{item.postcode,jdbcType=VARCHAR} AS POSTCODE,
+					   #{item.roadAddress,jdbcType=VARCHAR} AS ROAD_ADDRESS,
+					   #{item.jibunAddress,jdbcType=VARCHAR} AS JIBUN_ADDRESS,
+					   #{item.detailAddress,jdbcType=VARCHAR} AS DETAIL_ADDRESS,
+					   #{item.extraAddress,jdbcType=VARCHAR} AS RETRA_ADDRESS,
+					   #{item.agreeCode,jdbcType=INTEGER} AS AGREE_CODE,
+					   #{item.snsType,jdbcType=VARCHAR} AS SNS_TYPE,
+					   #{item.joinDate,jdbcType=DATE} AS JOIN_DATE,
+					   #{item.pwModifyDate,jdbcType=DATE} AS PW_MODIFY_DATE,
+					   SYSDATE,
+					   #{item.point,jdbcType=INTEGER} AS POINT
+				  FROM DUAL
+			</foreach>) A
+			
+	</insert>
+	
+	<!-- 회원 강제 탈퇴 및 강제 휴면 2-->
+	<select id="selectUserByNo" parameterType="Map" resultType="UserDTO">
+		  SELECT ID, PW, NAME, GENDER, EMAIL, MOBILE, BIRTHYEAR, BIRTHDAY, POSTCODE, ROAD_ADDRESS, JIBUN_ADDRESS, DETAIL_ADDRESS, EXTRA_ADDRESS, AGREE_CODE, SNS_TYPE, JOIN_DATE, PW_MODIFY_DATE, INFO_MODIFY_DATE, POINT
+		  	FROM USERS
+		  <where>
+		    <foreach item="item" collection="userNo" open="USER_NO in (" separator="," close=")" >
+		          #{item}
+		    </foreach>
+		  </where>
+	</select>
+	
+	<!-- 회원 강제 탈퇴 및 강제 휴면 1: USERS 테이블에서 제거-->
+	<delete id="deleteUserByNo" parameterType="Map">
+		DELETE
+		  FROM USERS
+		  <where>
+		    <foreach item="userNo" collection="userNo" open="USER_NO in (" separator="," close=")" >
+				 #{userNo}
+		  </foreach>
+		  </where>
+	</delete>
+	
+	<!-- 갤러리 게시글 총 개수  -->
+	<select id="selectGalleryListCount" resultType="int">
+		SELECT COUNT(*)
+		  FROM GALLERY
+	</select>
+	
+	<!-- 갤러리 게시판 리스트 페이징 처리 -->
+	<select id="selectGalleryListByMap" parameterType="Map" resultType="GalleryDTO">
+		SELECT A.ROW_NUM, A.GAL_NO, A.ID, A.GAL_TITLE, A.GAL_CONTENT, A.GAL_CREATE_DATE, A.GAL_LAST_MODIFY_DATE, A.GAL_HIT, A.LIKE_COUNT, A.IP
+		  FROM (SELECT ROW_NUMBER() OVER(ORDER BY GAL_NO DESC) AS ROW_NUM, GAL_NO, ID, GAL_TITLE, GAL_CONTENT, GAL_CREATE_DATE, GAL_LAST_MODIFY_DATE, GAL_HIT, LIKE_COUNT, IP
+		  		FROM GALLERY) A
+		 WHERE A.ROW_NUM BETWEEN #{begin} AND #{end}
+	</select>
+	
+	
+	
+	
+	
+	
+	
+</mapper>
